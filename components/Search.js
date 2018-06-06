@@ -66,10 +66,16 @@ class Search extends React.Component {
         }
     }
 
+    _displayDetailForFilm = (idFilm) => {
+        console.log("Display film with id " + idFilm)
+        this.props.navigation.navigate('FilmDetail', { idFilm: idFilm})
+    }
+
   //la classe React.Component implémente une méthode render(return)
 //  on doit obligatoirement ré-implémenter cet méthode et retourner
 //  les éléments graphiques
     render() {
+        console.log(this.props)
         return (
             <View style={styles.main_container}>
                 <TextInput style={styles.textinput}
@@ -83,7 +89,7 @@ class Search extends React.Component {
                     data={this.state.films}
                     keyExtractor={(item) => item.id.toString()}
                     //on définit notre prop qu'on va passer dans le fichier FilmItem
-                    renderItem={({item}) => <FilmItem film={item}/>}
+                    renderItem={({item}) => <FilmItem film={item} displayDetailForFilm={this._displayDetailForFilm}/>}
                     onEndReachedThreshold={0.5}
                     onEndReached={() => {
                         if (this.state.films.length > 0 && this.page < this.totalPages) { // On vérifie également qu'on n'a pas atteint la fin de la pagination (totalPages) avant de charger plus d'éléments
@@ -100,8 +106,7 @@ class Search extends React.Component {
 
 const styles = StyleSheet.create({
     main_container: {
-        flex: 1,
-        marginTop: 20
+        flex: 1
     },
     textinput: {
         marginLeft: 5,
