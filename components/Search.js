@@ -2,7 +2,7 @@
 //import de la librairie react
 import React from 'react'
 //import des librairies pour utiliser les components dont on a besoin
-import { StyleSheet, View, TextInput, Button, Text, FlatList } from 'react-native'
+import { StyleSheet, View, TextInput, Button, Text, FlatList, ActivityIndicator, Keyboard } from 'react-native'
 //import du fichiers contenant les datas qu'on veut afficher (ici via la FlatList)
 import FilmItem from './FilmItem'
 import { getFilmsFromApiWithSearchedText } from '../API/TMDBApi' // import { } from ... car c'est un export nommé dans TMDBApi.js
@@ -12,6 +12,11 @@ class Search extends React.Component {
 
     constructor(props){
         super(props)
+        this.searchedText =""
+        this.page = 0                   // Compteur pour connaître la page courante
+        this.totalPages = 0             // Nombre de pages totales pour savoir si on a atteint la fin des retours de l'API TMDB
+
+        //API TMDB
         this.state = {
             films: [],               // l'Api renvoi les films dans un tableau
             isLoading: false        // Par défaut à false car il n'y a pas de chargement tant qu'on ne lance pas de recherche
@@ -23,11 +28,28 @@ class Search extends React.Component {
     _loadFilms() {
         if (this.searchedText.length > 0) {                                             // Seulement si le texte recherché n'est pas vide
             this.setState({isLoading : true})
-            getFilmsFromApiWithSearchedText(this.searchedText).then(data => {          //lancement du chargement
-                this.setState({ films: data.results,                                  //le tableau de données renvoyées par l'api s'appelle résults
+            getFilmsFromApiWithSearchedText(this.searchedText, this.page+1).then(data => {          //lancement du chargement
+                this.page = data.page
+                this.totalPages = data.total_pages
+                this.setState({
+                    films: [ ...this.state.films, ...data.results ],
+                    //le tableau de données renvoyées par l'api s'appelle résults
                 isLoading : false})                                                  //Arret du chargement
             })
         }
+    }
+
+    _serachFilms(){
+        Keyboard.dismiss()
+
+        this.page = 0
+        this.totalPages = 0
+        this.setState({
+            films: [],
+        }, () => {
+           this._loadFilms()
+        })
+
     }
 
     _searchTextInputChanged(text) {
@@ -35,7 +57,7 @@ class Search extends React.Component {
     }
 
     _displayLoading() {
-        if(this.stateisLoading){
+        if(this.state.isLoading){
             return (
                 <View style = {styles.loading_container}>
                     <ActivityIndicator size = "large"/>      // choix entre large et small(par défaut)
@@ -48,14 +70,13 @@ class Search extends React.Component {
 //  on doit obligatoirement ré-implémenter cet méthode et retourner
 //  les éléments graphiques
     render() {
-        console.log(this.state.isLoading);
         return (
             <View style={styles.main_container}>
                 <TextInput style={styles.textinput}
                            placeholder='Titre du film'
                            onChangeText={(text) => this._searchTextInputChanged(text)}
-                           onSubmitEditing={() => this._loadFilms()} />
-                <Button style={{ height: 50 }} title='Rechercher' onPress={() => this._loadFilms()}/>
+                           onSubmitEditing={() => this._serachFilms()} />
+                <Button style={{ height: 50 }} title='Rechercher' onPress={() => this._serachFilms()}/>
                 //On utilise FlatList pour afficher une liste de données
                 <FlatList
                     //on récupère les films du fichier filmsData
@@ -63,6 +84,13 @@ class Search extends React.Component {
                     keyExtractor={(item) => item.id.toString()}
                     //on définit notre prop qu'on va passer dans le fichier FilmItem
                     renderItem={({item}) => <FilmItem film={item}/>}
+                    onEndReachedThreshold={0.5}
+                    onEndReached={() => {
+                        if (this.state.films.length > 0 && this.page < this.totalPages) { // On vérifie également qu'on n'a pas atteint la fin de la pagination (totalPages) avant de charger plus d'éléments
+                           // this._loadFilms()                                             this._loadFilms() affiche les pages suivantes (problème de versions qui bloque l'appli   )
+                           console.log('onreachedEnd')
+                        }
+                    }}
                 />
                 {this._displayLoading()}
             </View>
