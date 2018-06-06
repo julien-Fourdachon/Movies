@@ -6,11 +6,13 @@ import {StyleSheet,
         Text,
         ActivityIndicator,
         ScrollView,
-        Image
+        Image,
+        TouchableOpacity
         } from 'react-native'
 import {getFilmDetailFromApi, getImageFromApi} from "../API/TMDBApi";
 import moment from 'moment'
 import numeral from 'numeral'
+import { connect } from 'react-redux'
 
 
     class FilmDetail extends React.Component {
@@ -44,8 +46,17 @@ import numeral from 'numeral'
             })
         }
 
+        componentWillReceiveProps(nextProps) {
+
+        }
+
+
+        _toggleFavorite(){
+            const action = { type: "TOGGLE_FAVORITE", value: this.state.film }
+            this.props.dispatch(action)
+        }
+
         _displayFilm(){
-            console.log('on affiche le titre');
             const { film } = this.state;
             if( film != undefined){
                 return(
@@ -54,6 +65,11 @@ import numeral from 'numeral'
                            source={{uri: getImageFromApi(film.backdrop_path)}}
                     />            //définir une taille dans les styles sinon l'image ne s'affiche pas par défaut
                     <Text style ={styles.title}>{film.title}</Text>
+                    <TouchableOpacity
+                        style = {styles.favorite_container}
+                        onPress ={() => this._toggleFavorite()}>
+                        {this._displayFavoriteImage()}
+                    </TouchableOpacity>
                     <Text style ={styles.description}>{film.overview}</Text>
                     <Text style ={styles.divers}>Sorti le {moment(new Date(film.release_date)).format('DD/MM/YY')}</Text>
                     <Text style ={styles.divers}>Note : {film.vote_average} / 10
@@ -79,8 +95,20 @@ import numeral from 'numeral'
             }
         }
 
+        _displayFavoriteImage() {
+            var sourceImage = require('../Images/ic_favorite.png')
+            if (this.props.favoritesFilm.findIndex(item => item.id === this.state.film.id) !== 1) {     //film dans nos favoris
+                sourceImage = require('../Images/ic_favorite_border.png')
+            }
+            return (
+                <Image style = {styles.favorite_image}
+                source = {sourceImage}/>
+
+            )
+        }
+
+
         render(){
-            console.log("component FilmDétail rendu");
             return(
                 <View style = {styles.main_container}>
                     {this._displayLoading()}
@@ -90,6 +118,13 @@ import numeral from 'numeral'
         }
 
     }
+
+        const mapStateToProps = (state) => {
+    return{
+        favoritesFilm: state.favoritesFilm
+    }
+}
+
 
 
     const styles = StyleSheet.create({
@@ -126,7 +161,16 @@ import numeral from 'numeral'
         },
         divers: {
             margin: 5
+        },
+
+        favorite_container :{
+            alignItems: 'center'
+        },
+
+        favorite_image:{
+            width: 40,
+            height: 40
         }
     });
 
-export default FilmDetail
+export default connect(mapStateToProps) (FilmDetail)

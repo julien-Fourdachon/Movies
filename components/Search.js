@@ -6,6 +6,7 @@ import { StyleSheet, View, TextInput, Button, Text, FlatList, ActivityIndicator,
 //import du fichiers contenant les datas qu'on veut afficher (ici via la FlatList)
 import FilmItem from './FilmItem'
 import { getFilmsFromApiWithSearchedText } from '../API/TMDBApi' // import { } from ... car c'est un export nommé dans TMDBApi.js
+import { connect } from 'react-redux'
 
 
 class Search extends React.Component {
@@ -89,7 +90,9 @@ class Search extends React.Component {
                     data={this.state.films}
                     keyExtractor={(item) => item.id.toString()}
                     //on définit notre prop qu'on va passer dans le fichier FilmItem
-                    renderItem={({item}) => <FilmItem film={item} displayDetailForFilm={this._displayDetailForFilm}/>}
+                    renderItem={({item}) => <FilmItem film={item}
+                    isFilmFavorite={(this.props.favoritesFilm.findIndex(film => film.id === item.id) !== -1) ? true : false}
+                    displayDetailForFilm={this._displayDetailForFilm}/>}
                     onEndReachedThreshold={0.5}
                     onEndReached={() => {
                         if (this.state.films.length > 0 && this.page < this.totalPages) { // On vérifie également qu'on n'a pas atteint la fin de la pagination (totalPages) avant de charger plus d'éléments
@@ -128,4 +131,10 @@ const styles = StyleSheet.create({
     }
 })
 
-export default Search
+const mapStateToProps = (state) => {
+    return{
+        favoritesFilm: state.favoritesFilm
+    }
+};
+
+export default connect(mapStateToProps)(Search)
