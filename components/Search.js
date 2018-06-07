@@ -5,6 +5,7 @@ import React from 'react'
 import { StyleSheet, View, TextInput, Button, Text, FlatList, ActivityIndicator, Keyboard } from 'react-native'
 //import du fichiers contenant les datas qu'on veut afficher (ici via la FlatList)
 import FilmItem from './FilmItem'
+import FilmList from './FilmList'
 import { getFilmsFromApiWithSearchedText } from '../API/TMDBApi' // import { } from ... car c'est un export nommé dans TMDBApi.js
 import { connect } from 'react-redux'
 
@@ -21,12 +22,14 @@ class Search extends React.Component {
         this.state = {
             films: [],               // l'Api renvoi les films dans un tableau
             isLoading: false        // Par défaut à false car il n'y a pas de chargement tant qu'on ne lance pas de recherche
-        }
+
+            }
+
     }
 
 
     //l'underscore "indique" que la méthode est privée
-    _loadFilms() {
+    _loadFilms = () => {
         if (this.searchedText.length > 0) {                                             // Seulement si le texte recherché n'est pas vide
             this.setState({isLoading : true})
             getFilmsFromApiWithSearchedText(this.searchedText, this.page+1).then(data => {          //lancement du chargement
@@ -84,22 +87,13 @@ class Search extends React.Component {
                            onChangeText={(text) => this._searchTextInputChanged(text)}
                            onSubmitEditing={() => this._serachFilms()} />
                 <Button style={{ height: 50 }} title='Rechercher' onPress={() => this._serachFilms()}/>
-                //On utilise FlatList pour afficher une liste de données
-                <FlatList
-                    //on récupère les films du fichier filmsData
-                    data={this.state.films}
-                    keyExtractor={(item) => item.id.toString()}
-                    //on définit notre prop qu'on va passer dans le fichier FilmItem
-                    renderItem={({item}) => <FilmItem film={item}
-                    isFilmFavorite={(this.props.favoritesFilm.findIndex(film => film.id === item.id) !== -1) ? true : false}
-                    displayDetailForFilm={this._displayDetailForFilm}/>}
-                    onEndReachedThreshold={0.5}
-                    onEndReached={() => {
-                        if (this.state.films.length > 0 && this.page < this.totalPages) { // On vérifie également qu'on n'a pas atteint la fin de la pagination (totalPages) avant de charger plus d'éléments
-                           // this._loadFilms()                                             this._loadFilms() affiche les pages suivantes (problème de versions qui bloque l'appli   )
-                           console.log('onreachedEnd')
-                        }
-                    }}
+                <FilmList
+                    films={this.state.films} // C'est bien le component Search qui récupère les films depuis l'API et on les transmet ici pour que le component FilmList les affiche
+                    navigation={this.props.navigation} // Ici on transmet les informations de navigation pour permettre au component FilmList de naviguer vers le détail d'un film
+                    loadFilms={this._loadFilms} // _loadFilm charge les films suivants, ça concerne l'API, le component FilmList va juste appeler cette méthode quand l'utilisateur aura parcouru tous les films et c'est le component Search qui lui fournira les films suivants
+                    page={this.page}
+                    totalPages={this.totalPages} // les infos page et totalPages vont être utile, côté component FilmList, pour ne pas déclencher l'évènement pour charger plus de film si on a atteint la dernière page
+                    favoriteList={false} // Ici j'ai simplement ajouté un booléen à false pour indiquer qu'on n'est pas dans le cas de l'affichage de la liste des films favoris. Et ainsi pouvoir déclencher le chargement de plus de films lorsque l'utilisateur scrolle.
                 />
                 {this._displayLoading()}
             </View>
